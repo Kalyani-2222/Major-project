@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Shadow Painter</title>
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      background-color: #f2f2f2;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+
+    #canvas-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1);
+      width: 400px;
+      overflow-y: auto;
+      max-height: 95vh;
+    }
+
+    #canvas {
+      width: 300px;
+      height: 300px;
+      position: relative;
+      background-color: #e8e8e8;
+      border-radius: 8px;
+      border: 2px dashed #ccc;
+      overflow: hidden;
+    }
+
+    .slider {
+      margin: 10px;
+      width: 250px;
+    }
+
+    .slider-label {
+      display: flex;
+      justify-content: space-between;
+      width: 250px;
+    }
+
+    .slider-value {
+      width: 50px;
+      text-align: center;
+    }
+
+    #css-output {
+      margin-top: 20px;
+      width: 300px;
+      background: #f9f9f9;
+      padding: 10px;
+      border-radius: 5px;
+      border: 1px solid #ddd;
+      word-wrap: break-word;
+    }
+
+    #generate-button {
+      margin-top: 10px;
+      padding: 10px 20px;
+      background-color: #0077cc;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    #generate-button:hover {
+      background-color: #005fa3;
+    }
+
+    #shape-selector, #background-selector {
+      margin-top: 15px;
+    }
+
+    .layer-controls {
+      margin-top: 20px;
+      display: flex;
+      justify-content: space-between;
+      width: 300px;
+    }
+
+    .layer-btn {
+      padding: 6px 12px;
+      background-color: #00bfae;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    .layer-btn:hover {
+      background-color: #008f86;
+    }
+
+    .layer-btn-remove {
+      background-color: #f56a79;
+    }
+
+    .layer-btn-remove:hover {
+      background-color: #d95360;
+    }
+  </style>
+</head>
+<body>
+
+<div id="canvas-container">
+  <h1>Shadow Painter</h1>
+  <div id="canvas"></div>
+
+  <!-- Shape Selector -->
+  <div id="shape-selector">
+    <label for="shape">Shape: </label>
+    <select id="shape">
+      <option value="square">Square</option>
+      <option value="circle">Circle</option>
+      <option value="triangle">Triangle</option>
+      <option value="line-horizontal">Line (Horizontal)</option>
+      <option value="line-vertical">Line (Vertical)</option>
+      <option value="oval">Oval</option>
+      <option value="star">Star</option>
+      <option value="pentagon">Pentagon</option>
+      <option value="hexagon">Hexagon</option>
+      <option value="heptagon">Heptagon</option>
+      <option value="octagon">Octagon</option>
+      <option value="parallelogram">Parallelogram</option>
+      <option value="trapezoid">Trapezoid</option>
+      <option value="rhombus">Rhombus</option>
+      <option value="heart">Heart</option>
+      <option value="moon">Moon</option>
+      <option value="cross">Cross</option>
+      <option value="diamond">Diamond</option>
+      <option value="arch">Arch</option>
+      <option value="pacman">Pacman</option>
+    </select>
+  </div>
+
+  <!-- Background Color Picker -->
+  <div id="background-selector">
+    <label for="background">Background: </label>
+    <input type="color" id="backgroundColor" value="#e8e8e8" />
+  </div>
+
+  <!-- Sliders -->
+  <div class="slider-label">
+    <span>Horizontal Offset</span>
+    <span id="offsetX-value" class="slider-value">0px</span>
+  </div>
+  <input type="range" id="offsetX" class="slider" min="-100" max="100" step="1" value="0" />
+
+  <div class="slider-label">
+    <span>Vertical Offset</span>
+    <span id="offsetY-value" class="slider-value">0px</span>
+  </div>
+  <input type="range" id="offsetY" class="slider" min="-100" max="100" step="1" value="0" />
+
+  <div class="slider-label">
+    <span>Blur Radius</span>
+    <span id="blur-radius-value" class="slider-value">10px</span>
+  </div>
+  <input type="range" id="blur-radius" class="slider" min="0" max="100" step="1" value="10" />
+
+  <div class="slider-label">
+    <span>Spread Radius</span>
+    <span id="spread-radius-value" class="slider-value">0px</span>
+  </div>
+  <input type="range" id="spread-radius" class="slider" min="-50" max="50" step="1" value="0" />
+
+  <div class="slider-label">
+    <span>Shadow Color</span>
+    <input type="color" id="shadowColor" value="#000000" />
+  </div>
+
+  <!-- Buttons -->
+  <div class="layer-controls">
+    <button id="add-layer" class="layer-btn">Add Layer</button>
+    <button id="remove-layer" class="layer-btn layer-btn-remove" disabled>Remove Layer</button>
+  </div>
+
+  <button id="generate-button">Generate CSS</button>
+  <div id="css-output"></div>
+</div>
+
+<script>
+  const offsetX = document.getElementById('offsetX');
+  const offsetY = document.getElementById('offsetY');
+  const blurRadius = document.getElementById('blur-radius');
+  const spreadRadius = document.getElementById('spread-radius');
+  const shadowColor = document.getElementById('shadowColor');
+  const canvas = document.getElementById('canvas');
+  const cssOutput = document.getElementById('css-output');
+  const generateButton = document.getElementById('generate-button');
+  const addLayerButton = document.getElementById('add-layer');
+  const removeLayerButton = document.getElementById('remove-layer');
+  const shapeSelector = document.getElementById('shape');
+  const backgroundColorPicker = document.getElementById('backgroundColor');
+
+  let layers = [];
+  let currentLayer = -1;
+
+  function updateCanvas() {
+    const x = offsetX.value + 'px';
+    const y = offsetY.value + 'px';
+    const blur = blurRadius.value + 'px';
+    const spread = spreadRadius.value + 'px';
+    const color = shadowColor.value;
+    const shape = shapeSelector.value;
+    const backgroundColor = backgroundColorPicker.value;
+
+    canvas.style.backgroundColor = backgroundColor;
+
+    const shadowStyle = `${x} ${y} ${blur} ${spread} ${color}`;
+    if (currentLayer >= 0) {
+      layers[currentLayer] = { shape, shadowStyle };
+    }
+
+    canvas.innerHTML = '';
+    layers.forEach((layer, index) => {
+      const el = document.createElement('div');
+      el.style.position = 'absolute';
+      el.style.boxShadow = layer.shadowStyle;
+      el.style.backgroundColor = 'black';
+      el.style.top = `${index * 15}px`;
+      el.style.left = `${index * 15}px`;
+
+      switch (layer.shape) {
+        case 'square':
+          el.style.width = '100px';
+          el.style.height = '100px';
+          break;
+        case 'circle':
+          el.style.width = '100px';
+          el.style.height = '100px';
+          el.style.borderRadius = '50%';
+          break;
+        case 'triangle':
+          el.style.width = '0';
+          el.style.height = '0';
+          el.style.borderLeft = '50px solid transparent';
+          el.style.borderRight = '50px solid transparent';
+          el.style.borderBottom = '100px solid black';
+          el.style.backgroundColor = 'transparent';
+          break;
+        case 'line-horizontal':
+          el.style.width = '100px';
+          el.style.height = '5px';
+          break;
+        case 'line-vertical':
+          el.style.width = '5px';
+          el.style.height = '100px';
+          break;
+        case 'oval':
+          el.style.width = '120px';
+          el.style.height = '60px';
+          el.style.borderRadius = '60px / 30px';
+          break;
+        case 'star':
+          el.innerHTML = '★';
+          el.style.fontSize = '80px';
+          el.style.color = 'black';
+          el.style.backgroundColor = 'transparent';
+          break;
+        case 'pentagon':
+          el.style.clipPath = 'polygon(50% 0%, 100% 38%, 82% 100%, 18% 100%, 0% 38%)';
+          el.style.width = '100px';
+          el.style.height = '100px';
+          break;
+        case 'hexagon':
+          el.style.clipPath = 'polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%)';
+          el.style.width = '100px';
+          el.style.height = '100px';
+          break;
+        case 'heptagon':
+          el.style.clipPath = 'polygon(50% 0%, 90% 20%, 100% 60%, 75% 100%, 25% 100%, 0% 60%, 10% 20%)';
+          el.style.width = '100px';
+          el.style.height = '100px';
+          break;
+        case 'octagon':
+          el.style.clipPath = 'polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%)';
+          el.style.width = '100px';
+          el.style.height = '100px';
+          break;
+        case 'parallelogram':
+          el.style.width = '100px';
+          el.style.height = '60px';
+          el.style.transform = 'skew(20deg)';
+          break;
+        case 'trapezoid':
+          el.style.clipPath = 'polygon(25% 0%, 75% 0%, 100% 100%, 0% 100%)';
+          el.style.width = '100px';
+          el.style.height = '100px';
+          break;
+        case 'rhombus':
+          el.style.width = '70px';
+          el.style.height = '70px';
+          el.style.transform = 'rotate(45deg)';
+          break;
+        case 'heart':
+          el.style.clipPath = 'path("M10,30 A20,20 0 0,1 50,30 A20,20 0 0,1 90,30 Q90,60 50,90 Q10,60 10,30 Z")';
+          el.style.width = '100px';
+          el.style.height = '100px';
+          break;
+        case 'moon':
+          el.style.width = '100px';
+          el.style.height = '100px';
+          el.style.borderRadius = '50%';
+          el.style.boxShadow = '-20px 0 0 0 white';
+          break;
+        case 'cross':
+          el.innerHTML = '+';
+          el.style.fontSize = '100px';
+          el.style.color = 'black';
+          el.style.backgroundColor = 'transparent';
+          break;
+        case 'diamond':
+          el.style.width = '100px';
+          el.style.height = '100px';
+          el.style.transform = 'rotate(45deg)';
+          break;
+        case 'arch':
+          el.style.width = '100px';
+          el.style.height = '50px';
+          el.style.borderTopLeftRadius = '50px';
+          el.style.borderTopRightRadius = '50px';
+          break;
+        case 'pacman':
+          el.style.width = '100px';
+          el.style.height = '100px';
+          el.style.borderRadius = '50%';
+          el.style.clipPath = 'polygon(50% 50%, 100% 0, 100% 100%)';
+          break;
+      }
+
+      canvas.appendChild(el);
+    });
+
+    document.getElementById('offsetX-value').textContent = x;
+    document.getElementById('offsetY-value').textContent = y;
+    document.getElementById('blur-radius-value').textContent = blur;
+    document.getElementById('spread-radius-value').textContent = spread;
+  }
+
+  offsetX.addEventListener('input', updateCanvas);
+  offsetY.addEventListener('input', updateCanvas);
+  blurRadius.addEventListener('input', updateCanvas);
+  spreadRadius.addEventListener('input', updateCanvas);
+  shadowColor.addEventListener('input', updateCanvas);
+  shapeSelector.addEventListener('change', updateCanvas);
+  backgroundColorPicker.addEventListener('input', updateCanvas);
+
+  addLayerButton.addEventListener('click', () => {
+    currentLayer++;
+    layers.push({ shape: shapeSelector.value, shadowStyle: '' });
+    removeLayerButton.disabled = false;
+    updateCanvas();
+  });
+
+  removeLayerButton.addEventListener('click', () => {
+    if (currentLayer >= 0) {
+      layers.splice(currentLayer, 1);
+      currentLayer = Math.max(currentLayer - 1, -1);
+      if (layers.length === 0) removeLayerButton.disabled = true;
+      updateCanvas();
+    }
+  });
+
+  generateButton.addEventListener('click', () => {
+    let cssCode = `background-color: ${backgroundColorPicker.value};\n`;
+    layers.forEach((layer, index) => {
+      cssCode += `.layer-${index + 1} {\n  box-shadow: ${layer.shadowStyle};\n}\n`;
+    });
+    cssOutput.textContent = cssCode;
+  });
+
+  updateCanvas();
+</script>
+</body>
+</html>
